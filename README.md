@@ -5,6 +5,10 @@ structured summaries, key decisions, open questions, and editable action
 items. Built for the SDE I take-home: Node + Express backend, React +
 Vite frontend, SQLite storage, OpenAI for extraction.
 
+**Live demo:** [https://meetsummaryai.netlify.app](https://meetsummaryai.netlify.app)
+— frontend on Netlify, API on Render (free tier, ephemeral SQLite). Data may
+reset after redeploys or backend restarts.
+
 ---
 
 ## Architecture
@@ -120,7 +124,9 @@ cp backend/.env.example backend/.env   # then add your OPENAI_API_KEY
 npm run dev                            # starts backend (8000) + frontend (3000)
 ```
 
-Open <http://localhost:3000>.
+Open <http://localhost:3000>, or try the hosted app at
+[https://meetsummaryai.netlify.app](https://meetsummaryai.netlify.app) (no
+local setup required).
 
 To run the test suite:
 
