@@ -1,0 +1,17 @@
+{
+  "name": "pitchsense-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI Meeting Notes and Action Tracker — Node/TS backend + React frontend",
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "dev": "concurrently -k -n backend,frontend -c blue,magenta \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "test": "npm --prefix backend run test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

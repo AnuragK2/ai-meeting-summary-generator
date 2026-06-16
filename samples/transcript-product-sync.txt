@@ -1,0 +1,22 @@
+Product Sync — October 14, 2025
+Attendees: Priya (PM), Marcus (Eng Lead), Jen (Design), Tomas (QA)
+
+Priya: Thanks for joining. Today we need to lock in the beta launch date and decide whether onboarding ships v1 or v2.
+Marcus: From engineering — v1 is ready and stable. v2 is about 60% done. If we wait for v2 we slip two weeks minimum.
+Jen: From a design perspective v2 is the better experience, but v1 is acceptable for the beta cohort. I'd rather ship v1 now and follow up with v2 in November.
+Priya: Okay, let's commit to shipping the beta with onboarding v1 on November 15. We'll cut v2 from beta scope.
+Marcus: Agreed. I'll update the milestone in Linear today.
+Priya: Tomas, can you put together a regression test plan for the beta build by Monday October 21?
+Tomas: Yes, I'll have a draft by end of day Friday October 18 and finalize Monday.
+Jen: One thing that's still open — what do we do about the empty state in the dashboard? We never decided on copy.
+Priya: Good catch. Let's table that for a separate working session. Jen, can you set that up?
+Jen: Sure. I'll send invites by tomorrow.
+Marcus: Quick risk — the new auth service is gated behind a feature flag. If we hit unexpected load we may need to roll it back. We haven't done the load test yet.
+Priya: That's important. Marcus, can you own the load test? Let's get it done before launch — no later than November 7. Mark it high priority.
+Marcus: Will do.
+Priya: Last thing — pricing page copy. Marketing wants final answers by next week. We still don't know if the free tier includes the export feature.
+Marcus: That's a product decision, not engineering. Priya?
+Priya: I'll think about it and circle back. Open question for now.
+Jen: Also — do we need legal review on the new terms of service before launch?
+Priya: Yes, almost certainly. Open question, I'll check with legal.
+Priya: Okay, that wraps it. Thanks everyone.

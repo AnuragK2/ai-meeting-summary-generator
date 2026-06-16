@@ -1,0 +1,163 @@
+import { useEffect, useState } from "react";
+import { clsx } from "clsx";
+import { Spinner } from "../../../components/ui/Spinner";
+import { formatApiError } from "../../../lib/apiClient";
+import { isOverdueDate } from "../../../lib/formatDate";
+import type {
+  ActionItem,
+  ActionItemStatus,
+  Priority,
+} from "../../../types/api";
+import { useUpdateActionItem } from "../api/useActionItems";
+
+interface Props {
+  item: ActionItem;
+  meetingTitle?: string;
+  meetingLink?: string;
+  highlightOverdue?: boolean;
+}
+
+const STATUSES: ActionItemStatus[] = ["open", "in_progress", "done"];
+const PRIORITIES: Priority[] = ["low", "medium", "high"];
+
+const statusLabel = (s: ActionItemStatus) =>
+  s === "in_progress" ? "In progress" : s === "done" ? "Done" : "Open";
+
+export function ActionItemCard({
+  item,
+  meetingTitle,
+  meetingLink,
+  highlightOverdue = true,
+}: Props) {
+  const update = useUpdateActionItem(item.id, item.meeting_id);
+
+  const [owner, setOwner] = useState(item.owner);
+  const [dueDate, setDueDate] = useState(item.due_date ?? "");
+  const [task, setTask] = useState(item.task_description);
+
+  useEffect(() => {
+    setOwner(item.owner);
+    setDueDate(item.due_date ?? "");
+    setTask(item.task_description);
+  }, [item.id, item.owner, item.due_date, item.task_description]);
+
+  const overdue = highlightOverdue && isOverdueDate(item.due_date, item.status);
+
+  function commitOwner() {
+    const trimmed = owner.trim() || "Unassigned";
+    if (trimmed !== item.owner) update.mutate({ owner: trimmed });
+    else setOwner(trimmed);
+  }
+  function commitTask() {
+    const trimmed = task.trim();
+    if (trimmed && trimmed !== item.task_description)
+      update.mutate({ task_description: trimmed });
+  }
+  function commitDueDate() {
+    const value = dueDate || null;
+    if (value !== (item.due_date ?? null)) update.mutate({ due_date: value });
+  }
+
+  return (
+    <div
+      className={clsx(
+        "rounded-lg border bg-white p-4 shadow-sm transition",
+        overdue
+          ? "border-rose-200 border-l-4 border-l-rose-500"
+          : "border-slate-200",
+      )}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <textarea
+            className="input min-h-[42px] resize-none text-sm font-medium"
+            value={task}
+            onChange={(e) => setTask(e.target.value)}
+            onBlur={commitTask}
+            disabled={update.isPending}
+          />
+          {item.source_quote && (
+            <blockquote className="mt-2 border-l-2 border-slate-300 pl-3 text-xs italic text-slate-500">
+              &ldquo;{item.source_quote}&rdquo;
+            </blockquote>
+          )}
+          {meetingTitle && meetingLink && (
+            <div className="mt-2 text-xs text-slate-500">
+              From{" "}
+              <a className="text-indigo-700 hover:underline" href={meetingLink}>
+                {meetingTitle}
+              </a>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-1 text-xs text-slate-500">
+          {update.isPending && <Spinner className="h-3 w-3" />}
+          {update.isError && (
+            <span className="text-rose-600">{formatApiError(update.error)}</span>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div>
+          <label className="label text-xs">Owner</label>
+          <input
+            className="input"
+            value={owner}
+            onChange={(e) => setOwner(e.target.value)}
+            onBlur={commitOwner}
+            disabled={update.isPending}
+          />
+        </div>
+        <div>
+          <label className="label text-xs">Due</label>
+          <input
+            type="date"
+            className="input"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            onBlur={commitDueDate}
+            disabled={update.isPending}
+          />
+          {overdue && (
+            <p className="mt-1 text-xs font-medium text-rose-600">Overdue</p>
+          )}
+        </div>
+        <div>
+          <label className="label text-xs">Priority</label>
+          <select
+            className="select"
+            value={item.priority}
+            onChange={(e) =>
+              update.mutate({ priority: e.target.value as Priority })
+            }
+            disabled={update.isPending}
+          >
+            {PRIORITIES.map((p) => (
+              <option key={p} value={p}>
+                {p[0].toUpperCase() + p.slice(1)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label text-xs">Status</label>
+          <select
+            className="select"
+            value={item.status}
+            onChange={(e) =>
+              update.mutate({ status: e.target.value as ActionItemStatus })
+            }
+            disabled={update.isPending}
+          >
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {statusLabel(s)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+}
