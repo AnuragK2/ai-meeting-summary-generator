@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler } from "express";
 import { ZodError } from "zod";
+import { config, formatBytes } from "../config/env.js";
 import { HttpError } from "../errors/index.js";
 
 interface BodyParserError extends Error {
@@ -58,8 +59,7 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     res.status(413).json({
       error: {
         code: "PAYLOAD_TOO_LARGE",
-        message:
-          "Request body exceeds the 2 MB limit. Try a shorter transcript.",
+        message: `Request body exceeds the ${formatBytes(config.bodyLimitBytes)} limit. Try a shorter transcript.`,
       },
     });
     return;

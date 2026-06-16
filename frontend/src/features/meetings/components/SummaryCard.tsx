@@ -10,7 +10,8 @@ export function SummaryCard({ summary }: { summary: MeetingSummary | null }) {
         </p>
       ) : (
         <p className="text-sm italic text-slate-500">
-          No summary yet. Run extraction.
+          No summary generated yet. Click <span className="font-medium">Regenerate</span> to try
+          extraction again.
         </p>
       )}
     </div>

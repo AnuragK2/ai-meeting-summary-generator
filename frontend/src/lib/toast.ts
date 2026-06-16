@@ -46,6 +46,9 @@ export const notify = {
   /**
    * Shows loading → success/error in one call. Useful for fire-and-forget
    * async actions like "Copy markdown" where we don't track state locally.
+   * The detailed error reason is shown in the toast description so the
+   * headline stays short and doesn't get duplicated when the underlying
+   * `formatApiError` output already starts with the same words.
    */
   promise<T>(
     promise: Promise<T>,
@@ -54,7 +57,10 @@ export const notify = {
     return toast.promise(promise, {
       loading: msgs.loading,
       success: msgs.success,
-      error: (err) => `${msgs.error}: ${formatApiError(err)}`,
+      error: (err) => ({
+        message: msgs.error,
+        description: formatApiError(err),
+      }),
     });
   },
 };

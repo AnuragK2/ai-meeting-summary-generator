@@ -65,14 +65,62 @@ export async function apiFetch<T>(
     const errBody = body as ApiErrorBody | null;
     throw new ApiError(
       res.status,
-      errBody?.error?.message ??
-        text ??
+      // `??` would treat the empty string as "valid" — use `||` so an empty
+      // body falls through to the generic message instead of surfacing "".
+      errBody?.error?.message ||
+        text ||
         `Request failed with status ${res.status}`,
       errBody?.error?.code ?? `HTTP_${res.status}`,
       errBody?.error?.details,
     );
   }
   return body as T;
+}
+
+/**
+ * Variant of `apiFetch` for endpoints that return plain text (e.g. the
+ * markdown export). Errors still come back as the typed `ApiError`
+ * envelope so they format identically in toasts and banners.
+ */
+export async function apiFetchText(path: string, init: RequestInit = {}): Promise<string> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      headers: {
+        Accept: "text/markdown, text/plain, */*",
+        ...(init.headers ?? {}),
+      },
+      ...init,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError(0, "Request was cancelled.", "ABORTED");
+    }
+    throw new ApiError(
+      0,
+      "Could not reach the server. Check that the backend is running on port 8000.",
+      "NETWORK_ERROR",
+      err instanceof Error ? err.message : undefined,
+    );
+  }
+
+  const text = await res.text();
+  if (!res.ok) {
+    // Errors are still JSON-enveloped server-side; parse opportunistically.
+    let errBody: ApiErrorBody | null = null;
+    try {
+      errBody = text ? (JSON.parse(text) as ApiErrorBody) : null;
+    } catch {
+      errBody = null;
+    }
+    throw new ApiError(
+      res.status,
+      errBody?.error?.message || text || `Request failed with status ${res.status}`,
+      errBody?.error?.code ?? `HTTP_${res.status}`,
+      errBody?.error?.details,
+    );
+  }
+  return text;
 }
 
 export function apiUrl(path: string): string {

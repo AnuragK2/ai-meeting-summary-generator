@@ -1,16 +1,62 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ErrorBanner } from "../../../components/ui/ErrorBanner";
 import { Spinner } from "../../../components/ui/Spinner";
 import { formatApiError } from "../../../lib/apiClient";
 import { isOverdueDate } from "../../../lib/formatDate";
-import type { ActionItemFilters as Filters } from "../../../types/api";
+import type {
+  ActionItemFilters as Filters,
+  ActionItemStatus,
+  Priority,
+} from "../../../types/api";
 import { useActionItems } from "../api/useActionItems";
 import { ActionItemCard } from "../components/ActionItemCard";
 import { ActionItemFilters } from "../components/ActionItemFilters";
 import { StatCard } from "../components/StatCard";
 
+const FILTER_KEYS = [
+  "owner",
+  "status",
+  "priority",
+  "due_before",
+  "overdue",
+  "meeting_id",
+] as const;
+
+function paramsToFilters(params: URLSearchParams): Filters {
+  const f: Filters = {};
+  const owner = params.get("owner");
+  if (owner) f.owner = owner;
+  const status = params.get("status");
+  if (status === "open" || status === "in_progress" || status === "done") {
+    f.status = status as ActionItemStatus;
+  }
+  const priority = params.get("priority");
+  if (priority === "low" || priority === "medium" || priority === "high") {
+    f.priority = priority as Priority;
+  }
+  const dueBefore = params.get("due_before");
+  if (dueBefore) f.due_before = dueBefore;
+  if (params.get("overdue") === "true") f.overdue = true;
+  const meetingId = params.get("meeting_id");
+  if (meetingId) f.meeting_id = meetingId;
+  return f;
+}
+
 export function ActionItemsDashboardPage() {
-  const [filters, setFilters] = useState<Filters>({});
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo(() => paramsToFilters(searchParams), [searchParams]);
+  const setFilters = (next: Filters) => {
+    const nextParams = new URLSearchParams(searchParams);
+    // Wipe filter keys we own, then set whatever is in `next`. Preserves
+    // any non-filter query params another caller might have added.
+    for (const k of FILTER_KEYS) nextParams.delete(k);
+    for (const [k, v] of Object.entries(next)) {
+      if (v === undefined || v === null || v === "" || v === false) continue;
+      nextParams.set(k, String(v));
+    }
+    setSearchParams(nextParams, { replace: true });
+  };
   const { data, isLoading, isError, error, refetch } = useActionItems(filters);
 
   const totals = useMemo(

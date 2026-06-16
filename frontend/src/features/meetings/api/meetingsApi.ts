@@ -1,4 +1,4 @@
-import { apiFetch, apiUrl } from "../../../lib/apiClient";
+import { apiFetch, apiFetchText, apiUrl } from "../../../lib/apiClient";
 import type {
   CreateMeetingInput,
   MeetingDetail,
@@ -21,12 +21,7 @@ export const meetingsApi = {
     apiFetch<void>(`/meetings/${id}`, { method: "DELETE" }),
   regenerate: (id: string) =>
     apiFetch<MeetingDetail>(`/meetings/${id}/regenerate`, { method: "POST" }),
-  exportMarkdown: async (id: string): Promise<string> => {
-    const res = await fetch(apiUrl(`/meetings/${id}/export.md`));
-    if (!res.ok) {
-      throw new Error(`Failed to export markdown (${res.status})`);
-    }
-    return res.text();
-  },
+  exportMarkdown: (id: string): Promise<string> =>
+    apiFetchText(`/meetings/${id}/export.md`),
   exportMarkdownUrl: (id: string): string => apiUrl(`/meetings/${id}/export.md`),
 };

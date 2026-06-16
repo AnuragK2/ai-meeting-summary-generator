@@ -79,6 +79,26 @@ Vite frontend, SQLite storage, OpenAI for extraction.
   / `failed`) is still updated end-to-end so the pattern generalises to
   async if you want to evolve it later.
 
+- **End-to-end UX feedback layer.**
+  - Every mutation (create / regenerate / delete / inline action item edit
+    / markdown copy) emits a toast via a `sonner` wrapper in
+    [`frontend/src/lib/toast.ts`](frontend/src/lib/toast.ts) — success,
+    warning (extraction failed but the meeting saved), or error with the
+    typed `ApiError` message routed through `formatApiError`.
+  - Destructive actions go through a custom accessible
+    [`ConfirmDialog`](frontend/src/components/ui/ConfirmDialog.tsx)
+    (portal, Escape to close, focus management, body scroll lock).
+  - A top-level
+    [`ErrorBoundary`](frontend/src/app/ErrorBoundary.tsx) catches render
+    crashes and offers retry / home actions instead of a white screen.
+
+- **Production-shaped backend hardening.** Helmet for security headers,
+  CORS scoped to an env-driven origin allow-list, per-IP rate limit on
+  the two LLM-touching endpoints, body size limit, structured error
+  envelope (with specific handling for `INVALID_JSON` and
+  `PAYLOAD_TOO_LARGE`), `uncaughtException` exits non-zero so a process
+  manager can restart, `SIGTERM` drains in-flight requests.
+
 ### Data model
 
 | Table               | Columns (abridged)                                              |
@@ -94,7 +114,7 @@ Vite frontend, SQLite storage, OpenAI for extraction.
 Prereqs: Node 18+ (tested on 20 and 24), an OpenAI API key.
 
 ```bash
-cd Pitchsense-ai
+cd meet.ai
 npm run install:all                    # installs root + backend + frontend
 cp backend/.env.example backend/.env   # then add your OPENAI_API_KEY
 npm run dev                            # starts backend (8000) + frontend (3000)
@@ -105,22 +125,56 @@ Open <http://localhost:3000>.
 To run the test suite:
 
 ```bash
-npm test                               # runs backend Vitest suites
+npm test                               # runs backend + frontend Vitest suites
 ```
 
 ### Environment variables (`backend/.env`)
 
-| Var              | Default        | Notes                                      |
-| ---------------- | -------------- | ------------------------------------------ |
-| `OPENAI_API_KEY` | _required_     | Without it, extraction endpoints return 500 with a clear message. |
-| `OPENAI_MODEL`   | `gpt-4o-mini`  | Any chat model that supports strict json_schema response format. |
-| `PORT`           | `8000`         | Backend HTTP port.                         |
-| `DB_PATH`        | `./data/app.db`| Anything except `:memory:` is persisted to disk. |
+| Var                              | Default                  | Notes                                                                  |
+| -------------------------------- | ------------------------ | ---------------------------------------------------------------------- |
+| `OPENAI_API_KEY`                 | _required_               | Server refuses to start without it (exit code 1, clear message).       |
+| `OPENAI_MODEL`                   | `gpt-4o-mini`            | Any chat model that supports the strict `json_schema` response format. |
+| `OPENAI_TIMEOUT_MS`              | `45000`                  | Hard per-request timeout for the OpenAI call.                          |
+| `PORT`                           | `8000`                   | Backend HTTP port.                                                     |
+| `ALLOWED_ORIGINS`                | `http://localhost:3000`  | CORS allow-list (comma separated). `*` opens all origins.              |
+| `EXTRACTION_RATE_LIMIT_PER_MIN`  | `10`                     | Per-IP cap on the two LLM-hitting endpoints.                           |
+| `DB_PATH`                        | `./data/app.db`          | Anything except `:memory:` is persisted to disk.                       |
 
 The frontend dev server runs on port **3000** and proxies `/api` to the
 backend at `http://localhost:8000` (see
 [`frontend/vite.config.ts`](frontend/vite.config.ts)). Override via
 `VITE_BACKEND_URL` if needed.
+
+### Quick API smoke test (no UI required)
+
+```bash
+# 1. create a meeting (extraction runs synchronously)
+curl -s http://localhost:8000/api/meetings \
+  -H 'Content-Type: application/json' \
+  -d @- <<'JSON' | jq '.meeting.id, .extraction_ok, .action_items | length'
+{
+  "title": "Sprint planning",
+  "date": "2025-11-01",
+  "participants": ["Alice", "Bob"],
+  "raw_transcript": "Alice: We agreed to ship the beta on Nov 15. Bob will draft release notes by Nov 10. We still owe a decision on the free-tier pricing."
+}
+JSON
+
+# 2. list meetings
+curl -s http://localhost:8000/api/meetings | jq '.meetings[] | {id, title, action_item_count}'
+
+# 3. update an action item (mark done)
+curl -s -X PATCH http://localhost:8000/api/action-items/<id> \
+  -H 'Content-Type: application/json' \
+  -d '{"status":"done"}' | jq '{id, status, updated_at}'
+
+# 4. cross-meeting dashboard with filters (Bonus B)
+curl -s 'http://localhost:8000/api/action-items?overdue=true&priority=high' | jq
+
+# 5. export to markdown (Bonus A)
+curl -s -o sprint-planning.md \
+  http://localhost:8000/api/meetings/<id>/export.md
+```
 
 ### Trying it out quickly
 
@@ -244,9 +298,21 @@ fail the test suite before reaching the API.
    AI-assisted clearly.
 6. **Inline assistant chat per meeting.** "What did we say about
    pricing?" answered from the transcript with retrieval.
-7. **Optimistic mutations and undo toasts** on PATCH/DELETE.
-8. **End-to-end tests** with Playwright covering paste → extract → edit
-   → mark done.
+7. **Optimistic mutations and undo toasts** on PATCH/DELETE. Today we
+   wait for the server before invalidating queries (simpler, less stale
+   data after errors). With optimistic UI an undo toast that reverses
+   the mutation if the user clicks within 5s would make destructive
+   actions friendlier.
+8. **Audit log of edits.** Append-only `action_item_history` row on every
+   PATCH so reviewers can see who changed what and when. Trivial with
+   our repository layer; useful once there's auth.
+9. **Structured request logging + request IDs** (pino + pino-http) so a
+   single failed extraction can be traced end-to-end across services.
+10. **End-to-end tests** with Playwright covering paste → extract → edit
+    → mark done → export markdown.
+11. **Database migrations as versioned files** (knex / drizzle / a tiny
+    home-grown runner) instead of idempotent `CREATE TABLE IF NOT EXISTS`
+    blobs. Needed the first time we have to change a column type.
 
 ---
 
@@ -272,7 +338,7 @@ fail the test suite before reaching the API.
 ## Repo layout
 
 ```
-Pitchsense-ai/
+meet.ai/
 ├── backend/
 │   ├── src/
 │   │   ├── server.ts                       # entry point

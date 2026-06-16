@@ -1,5 +1,7 @@
 import cors from "cors";
-import express, { type Express } from "express";
+import express, { type Express, type RequestHandler } from "express";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
 import { config, assertOpenAiConfigured } from "./config/env.js";
 import { ActionItemController } from "./controllers/ActionItemController.js";
 import { HealthController } from "./controllers/HealthController.js";
@@ -26,6 +28,28 @@ import type { MeetingExtractor } from "./services/MeetingExtractor.js";
 export interface AppDependencies {
   db: AppDatabase;
   extractor: MeetingExtractor;
+  /**
+   * Disable rate limiting (tests). The limiter holds in-memory counters
+   * that persist across requests in the same process, which breaks
+   * supertest suites that send many requests quickly.
+   */
+  disableRateLimit?: boolean;
+}
+
+/**
+ * CORS handler that honours an env-driven allow-list. `"*"` disables
+ * origin checking entirely; otherwise only listed origins are allowed.
+ */
+function buildCors(): RequestHandler {
+  const list = config.allowedOrigins;
+  if (list.includes("*")) return cors();
+  return cors({
+    origin(origin, cb) {
+      // Allow non-browser requests (curl, supertest) which omit Origin.
+      if (!origin) return cb(null, true);
+      cb(null, list.includes(origin));
+    },
+  });
 }
 
 /**
@@ -59,11 +83,33 @@ export function createApp(deps: AppDependencies): Express {
   const actionItemController = new ActionItemController(actionItemService);
 
   const app = express();
-  app.use(cors());
-  app.use(express.json({ limit: "2mb" }));
+  // helmet hardens common headers (X-Content-Type-Options, CSP, etc.). We
+  // disable the strict CSP because this server only emits JSON / markdown.
+  app.use(helmet({ contentSecurityPolicy: false }));
+  app.use(buildCors());
+  app.use(express.json({ limit: config.bodyLimit }));
+
+  // Per-IP rate limit on the two endpoints that hit the LLM. Skipped in
+  // tests so supertest suites do not exhaust the bucket.
+  const extractionLimiter: RequestHandler = deps.disableRateLimit
+    ? (_req, _res, next) => next()
+    : rateLimit({
+        windowMs: 60_000,
+        limit: config.extractionRateLimitPerMin,
+        standardHeaders: "draft-7",
+        legacyHeaders: false,
+        handler: (_req, res) => {
+          res.status(429).json({
+            error: {
+              code: "RATE_LIMITED",
+              message: `Too many extraction requests. Please wait a minute and try again. Limit: ${config.extractionRateLimitPerMin}/min.`,
+            },
+          });
+        },
+      });
 
   app.use("/api/health", healthRouter(healthController));
-  app.use("/api/meetings", meetingsRouter(meetingController));
+  app.use("/api/meetings", meetingsRouter(meetingController, extractionLimiter));
   app.use("/api/action-items", actionItemsRouter(actionItemController));
 
   app.use("/api", notFoundHandler);
@@ -83,6 +129,7 @@ export function createProductionApp(): Express {
   const extractor = new OpenAiExtractor({
     apiKey: config.openai.apiKey,
     model: config.openai.model,
+    requestTimeoutMs: config.openai.requestTimeoutMs,
   });
   return createApp({ db, extractor });
 }

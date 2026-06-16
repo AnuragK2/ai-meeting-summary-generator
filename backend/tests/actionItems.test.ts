@@ -33,7 +33,7 @@ const stubExtractor: MeetingExtractor = {
 
 function buildTestApp() {
   const db = createDatabase(":memory:");
-  return createApp({ db, extractor: stubExtractor });
+  return createApp({ db, extractor: stubExtractor, disableRateLimit: true });
 }
 
 describe("PATCH /api/action-items/:id", () => {
