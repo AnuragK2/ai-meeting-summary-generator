@@ -106,23 +106,25 @@ export function MeetingDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
           <Link to="/" className="text-xs text-slate-500 hover:text-slate-700">
             ← All meetings
           </Link>
-          <h1 className="mt-1 text-2xl font-semibold">{m.title}</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+          <h1 className="mt-1 break-words text-xl font-semibold sm:text-2xl">
+            {m.title}
+          </h1>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
             <span>{safeFormatDate(m.date, "PPP")}</span>
             {m.participants.length > 0 && (
-              <span>{m.participants.join(", ")}</span>
+              <span className="break-words">{m.participants.join(", ")}</span>
             )}
             <ExtractionStatusBadge status={status} />
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
           <button
-            className="btn-secondary"
+            className="btn-secondary col-span-2 w-full sm:col-span-1 sm:w-auto"
             onClick={() => regenerate.mutate()}
             disabled={extracting}
           >
@@ -130,18 +132,21 @@ export function MeetingDetailPage() {
             {extracting ? "Regenerating…" : "Regenerate"}
           </button>
           <a
-            className="btn-secondary"
+            className="btn-secondary w-full text-center sm:w-auto"
             href={meetingsApi.exportMarkdownUrl(id)}
             target="_blank"
             rel="noreferrer"
           >
             Export .md
           </a>
-          <button className="btn-secondary" onClick={copyMarkdown}>
+          <button
+            className="btn-secondary w-full sm:w-auto"
+            onClick={copyMarkdown}
+          >
             Copy markdown
           </button>
           <button
-            className="btn-danger"
+            className="btn-danger w-full sm:w-auto"
             onClick={() => setDeleteOpen(true)}
             disabled={remove.isPending}
           >
@@ -174,50 +179,50 @@ export function MeetingDetailPage() {
       <DecisionsCard summary={d.summary} />
 
       <section>
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
           <h2 className="text-lg font-semibold">
             Action items{" "}
             <span className="text-sm font-normal text-slate-500">
               ({d.action_items.length})
             </span>
           </h2>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <label className="text-xs font-medium text-slate-500">
-              Status:
+          <div className="grid w-full grid-cols-1 gap-2 min-[400px]:grid-cols-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+            <label className="flex flex-col gap-1 text-xs font-medium text-slate-500 sm:flex-row sm:items-center sm:gap-2">
+              <span>Status</span>
+              <select
+                className="select w-full py-1 sm:w-auto"
+                value={statusFilter}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as ActionItemStatus | "all")
+                }
+              >
+                {STATUS_FILTERS.map((s) => (
+                  <option key={s} value={s}>
+                    {s === "all"
+                      ? "All"
+                      : s === "in_progress"
+                        ? "In progress"
+                        : s[0].toUpperCase() + s.slice(1)}
+                  </option>
+                ))}
+              </select>
             </label>
-            <select
-              className="select w-auto py-1"
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as ActionItemStatus | "all")
-              }
-            >
-              {STATUS_FILTERS.map((s) => (
-                <option key={s} value={s}>
-                  {s === "all"
-                    ? "All"
-                    : s === "in_progress"
-                      ? "In progress"
-                      : s[0].toUpperCase() + s.slice(1)}
-                </option>
-              ))}
-            </select>
-            <label className="text-xs font-medium text-slate-500">
-              Priority:
+            <label className="flex flex-col gap-1 text-xs font-medium text-slate-500 sm:flex-row sm:items-center sm:gap-2">
+              <span>Priority</span>
+              <select
+                className="select w-full py-1 sm:w-auto"
+                value={priorityFilter}
+                onChange={(e) =>
+                  setPriorityFilter(e.target.value as Priority | "all")
+                }
+              >
+                {PRIORITY_FILTERS.map((p) => (
+                  <option key={p} value={p}>
+                    {p === "all" ? "All" : p[0].toUpperCase() + p.slice(1)}
+                  </option>
+                ))}
+              </select>
             </label>
-            <select
-              className="select w-auto py-1"
-              value={priorityFilter}
-              onChange={(e) =>
-                setPriorityFilter(e.target.value as Priority | "all")
-              }
-            >
-              {PRIORITY_FILTERS.map((p) => (
-                <option key={p} value={p}>
-                  {p === "all" ? "All" : p[0].toUpperCase() + p.slice(1)}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 

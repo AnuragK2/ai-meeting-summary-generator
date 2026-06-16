@@ -19,11 +19,17 @@ export function AppProviders({ children }: { children: ReactNode }) {
         <BrowserRouter>
           {children}
           <Toaster
-            position="top-right"
+            position="top-center"
             richColors
             closeButton
             expand
             duration={3500}
+            toastOptions={{
+              classNames: {
+                toast:
+                  "max-w-[calc(100vw-2rem)] sm:max-w-[420px] [margin-top:env(safe-area-inset-top)]",
+              },
+            }}
           />
         </BrowserRouter>
       </QueryClientProvider>

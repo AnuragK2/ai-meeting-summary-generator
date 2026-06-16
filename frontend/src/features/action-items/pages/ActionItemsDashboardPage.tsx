@@ -72,7 +72,7 @@ export function ActionItemsDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Action dashboard</h1>
+        <h1 className="text-xl font-semibold sm:text-2xl">Action dashboard</h1>
         <p className="text-sm text-slate-500">
           Every action item across every meeting. Overdue items are highlighted.
         </p>

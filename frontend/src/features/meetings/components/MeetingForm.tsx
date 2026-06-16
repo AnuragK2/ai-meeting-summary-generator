@@ -103,14 +103,14 @@ export function MeetingForm() {
 
   return (
     <form className="card space-y-5" onSubmit={onSubmit}>
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 pb-4">
-        <div>
+      <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="w-full sm:w-auto">
           <label className="label" htmlFor="sample">
             Try a sample transcript
           </label>
           <select
             id="sample"
-            className="select w-auto"
+            className="select w-full sm:w-auto"
             value={sampleId}
             onChange={(e) => loadSample(e.target.value)}
             disabled={submitting}
@@ -123,7 +123,7 @@ export function MeetingForm() {
             ))}
           </select>
         </div>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 sm:max-w-xs sm:text-right">
           Tip: press{" "}
           <kbd className="rounded border border-slate-300 bg-slate-100 px-1.5 py-0.5 font-mono text-[10px]">
             ⌘ / Ctrl
@@ -216,16 +216,20 @@ export function MeetingForm() {
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
         <button
           type="button"
-          className="btn-secondary"
+          className="btn-secondary w-full sm:w-auto"
           onClick={() => navigate("/")}
           disabled={submitting}
         >
           Cancel
         </button>
-        <button type="submit" className="btn-primary" disabled={submitting}>
+        <button
+          type="submit"
+          className="btn-primary w-full sm:w-auto"
+          disabled={submitting}
+        >
           {submitting && <Spinner />}
           {submitting ? "Extracting…" : "Save & extract"}
         </button>

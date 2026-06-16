@@ -153,7 +153,7 @@ export function ActionItemCard({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 lg:grid-cols-4">
         <div>
           <label className="label text-xs">Owner</label>
           <input

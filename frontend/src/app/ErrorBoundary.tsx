@@ -31,16 +31,16 @@ export class ErrorBoundary extends Component<Props, State> {
     if (!this.state.error) return this.props.children;
 
     return (
-      <div className="mx-auto max-w-2xl px-6 py-16">
-        <div className="rounded-lg border border-rose-200 bg-rose-50 p-6 text-rose-900 shadow-sm">
+      <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
+        <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-900 shadow-sm sm:p-6">
           <h1 className="text-lg font-semibold">The app hit an unexpected error</h1>
-          <p className="mt-2 text-sm">{this.state.error.message}</p>
-          <div className="mt-4 flex gap-2">
-            <button className="btn-primary" onClick={this.reset}>
+          <p className="mt-2 break-words text-sm">{this.state.error.message}</p>
+          <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row">
+            <button className="btn-primary w-full sm:w-auto" onClick={this.reset}>
               Try again
             </button>
             <button
-              className="btn-secondary"
+              className="btn-secondary w-full sm:w-auto"
               onClick={() => window.location.assign("/")}
             >
               Go home

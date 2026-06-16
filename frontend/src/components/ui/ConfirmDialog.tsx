@@ -123,10 +123,10 @@ export function ConfirmDialog({
           </div>
         )}
 
-        <div className="mt-5 flex justify-end gap-2">
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
             type="button"
-            className="btn-secondary"
+            className="btn-secondary w-full sm:w-auto"
             onClick={onCancel}
             disabled={loading}
           >
@@ -135,7 +135,7 @@ export function ConfirmDialog({
           <button
             ref={confirmRef}
             type="button"
-            className={confirmClass}
+            className={clsx(confirmClass, "w-full sm:w-auto")}
             onClick={onConfirm}
             disabled={loading}
           >

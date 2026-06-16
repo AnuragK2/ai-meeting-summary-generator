@@ -17,7 +17,7 @@ export function ActionItemFilters({ filters, onChange }: Props) {
   };
 
   return (
-    <div className="card grid grid-cols-1 gap-3 sm:grid-cols-5">
+    <div className="card grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
       <div>
         <label className="label text-xs">Owner</label>
         <input
