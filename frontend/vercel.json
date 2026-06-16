@@ -1,0 +1,8 @@
+{
+    "rewrites": [
+      {
+        "source": "/api/:path*",
+        "destination": "https://ai-meeting-summary-generator-6evo.onrender.com/api/:path*"
+      }
+    ]
+  }
