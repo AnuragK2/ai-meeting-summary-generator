@@ -1,4 +1,4 @@
-# Pitchsense — AI Meeting Notes & Action Tracker
+# Meet.ai — AI Meeting Notes & Action Tracker
 
 A full-stack TypeScript app that turns pasted meeting transcripts into
 structured summaries, key decisions, open questions, and editable action
